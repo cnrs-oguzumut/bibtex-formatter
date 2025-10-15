@@ -18,7 +18,7 @@ A free, open-source web tool to automatically format BibTeX and BBL bibliography
 ## 🚀 Quick Start
 
 ### Option 1: Use Online (Recommended)
-Visit: https://YOUR-USERNAME.github.io/bibtex-formatter/
+Visit: https://cnrs-oguzumut.github.io/bibtex-formatter/
 
 ### Option 2: Download and Run Locally
 1. Download `index.html` from this repository
