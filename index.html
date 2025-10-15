@@ -361,8 +361,38 @@
         }
 
         function processBibFile(content, options) {
-            const authorPattern = /(\s+author\s*=\s*\{)([^}]+)(\})/gi;
-            const journalPattern = /(\s+journal\s*=\s*\{)([^}]+)(\})/gi;
+            // Better pattern that handles nested braces
+            function matchField(fieldName, content) {
+                const results = [];
+                const pattern = new RegExp(`(\\s+${fieldName}\\s*=\\s*\\{)`, 'gi');
+                let match;
+                
+                while ((match = pattern.exec(content)) !== null) {
+                    const startPos = match.index;
+                    const prefixEnd = pattern.lastIndex;
+                    
+                    // Find matching closing brace
+                    let braceCount = 1;
+                    let pos = prefixEnd;
+                    while (pos < content.length && braceCount > 0) {
+                        if (content[pos] === '{') braceCount++;
+                        if (content[pos] === '}') braceCount--;
+                        pos++;
+                    }
+                    
+                    if (braceCount === 0) {
+                        results.push({
+                            fullMatch: content.substring(startPos, pos),
+                            prefix: match[1],
+                            value: content.substring(prefixEnd, pos - 1),
+                            startPos: startPos,
+                            endPos: pos
+                        });
+                    }
+                }
+                
+                return results;
+            }
             
             let result = content;
             let stats = {
@@ -371,22 +401,32 @@
                 duplicatesRemoved: 0
             };
             
+            // Process authors
             if (options.abbreviateAuthors) {
-                result = result.replace(authorPattern, (match, prefix, authors, suffix) => {
+                const authorMatches = matchField('author', result);
+                // Process in reverse order to maintain positions
+                for (let i = authorMatches.length - 1; i >= 0; i--) {
+                    const match = authorMatches[i];
+                    const formatted = formatAuthors(match.value);
+                    const replacement = `${match.prefix}${formatted}}`;
+                    result = result.substring(0, match.startPos) + replacement + result.substring(match.endPos);
                     stats.authorsProcessed++;
-                    const formatted = formatAuthors(authors);
-                    return `${prefix}${formatted}${suffix}`;
-                });
+                }
             }
             
+            // Process journals
             if (options.abbreviateJournals) {
-                result = result.replace(journalPattern, (match, prefix, journal, suffix) => {
-                    const abbreviated = abbreviateJournal(journal);
-                    if (abbreviated !== journal.replace(/[{}]/g, '').trim()) {
+                const journalMatches = matchField('journal', result);
+                // Process in reverse order to maintain positions
+                for (let i = journalMatches.length - 1; i >= 0; i--) {
+                    const match = journalMatches[i];
+                    const abbreviated = abbreviateJournal(match.value);
+                    if (abbreviated !== match.value.replace(/[{}]/g, '').trim()) {
+                        const replacement = `${match.prefix}${abbreviated}}`;
+                        result = result.substring(0, match.startPos) + replacement + result.substring(match.endPos);
                         stats.journalsProcessed++;
                     }
-                    return `${prefix}${abbreviated}${suffix}`;
-                });
+                }
             }
             
             return { content: result, stats };
