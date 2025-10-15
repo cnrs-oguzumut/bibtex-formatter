@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BibTeX Author & Journal Formatter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .drop-zone {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 60px 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #f8f9ff;
+        }
+        
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+            transform: scale(1.02);
+        }
+        
+        .drop-zone-text {
+            color: #667eea;
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+        
+        .drop-zone-subtext {
+            color: #999;
+            font-size: 14px;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .options {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .option {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .option input[type="checkbox"] {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .option label {
+            color: #333;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        
+        .preview {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            display: none;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-box {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 BibTeX Formatter</h1>
+        <p class="subtitle">Automatically abbreviate author names and journal titles</p>
+        
+        <div class="drop-zone" id="dropZone">
+            <div class="drop-zone-text">Drop your .bib or .bbl file here</div>
+            <div class="drop-zone-subtext">or click to browse</div>
+            <input type="file" id="fileInput" accept=".bib,.bbl">
+        </div>
+        
+        <div class="options">
+            <div class="option">
+                <input type="checkbox" id="abbreviateAuthors" checked>
+                <label for="abbreviateAuthors">Abbreviate author names (e.g., "John Smith" → "J. Smith")</label>
+            </div>
+            <div class="option">
+                <input type="checkbox" id="abbreviateJournals" checked>
+                <label for="abbreviateJournals">Abbreviate journal names</label>
+            </div>
+            <div class="option">
+                <input type="checkbox" id="removeDuplicates" checked>
+                <label for="removeDuplicates">Remove duplicate entries</label>
+            </div>
+        </div>
+        
+        <button class="button" id="processButton" disabled>Process File</button>
+        
+        <div class="stats" id="stats" style="display: none;"></div>
+        
+        <div class="status" id="status"></div>
+        
+        <div class="preview" id="preview"></div>
+        
+        <div class="footer">
+            All processing happens locally in your browser - no data is uploaded 🔒
+        </div>
+    </div>
+
+    <script>
+        // Journal abbreviation dictionary
+        const JOURNAL_ABBREV = {
+            'Computational Materials Science': 'Comput. Mater. Sci.',
+            'Acta Materialia': 'Acta Mater.',
+            'International Journal of Plasticity': 'Int. J. Plast.',
+            'Materials transactions': 'Mater. Trans.',
+            'Journal of the Mechanics and Physics of Solids': 'J. Mech. Phys. Solids',
+            'European Journal of Mechanics-A/Solids': 'Eur. J. Mech. A Solids',
+            'Journal of Applied Mechanics': 'J. Appl. Mech.',
+            'Philosophical Magazine': 'Philos. Mag.',
+            'Mathematics and Mechanics of Solids': 'Math. Mech. Solids',
+            'Progress in Materials Science': 'Prog. Mater. Sci.',
+            'Materials Science and Technology': 'Mater. Sci. Technol.',
+            'Comptes Rendus Mecanique': 'C. R. Mec.',
+            'Frontiers in Earth Science': 'Front. Earth Sci.',
+            'Philosophical Transactions of the Royal Society A Mathematical Physical and Engineering Sciences': 'Philos. Trans. R. Soc. A',
+            'Acta metallurgica et materialia': 'Acta Metall. Mater.',
+            'Computer methods in applied mechanics and engineering': 'Comput. Methods Appl. Mech. Eng.',
+            'Acta metallurgica': 'Acta Metall.',
+            'International Journal of Engineering Science': 'Int. J. Eng. Sci.',
+            'Modelling and Simulation in Materials Science and Engineering': 'Modelling Simul. Mater. Sci. Eng.',
+            'International Journal of Solids and Structures': 'Int. J. Solids Struct.'
+        };
+
+        // DOM elements
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const processButton = document.getElementById('processButton');
+        const status = document.getElementById('status');
+        const preview = document.getElementById('preview');
+        const statsDiv = document.getElementById('stats');
+
+        let currentFile = null;
+        let currentContent = null;
+
+        // Helper functions
+        function getInitials(name) {
+            name = name.replace(/~/g, ' ');
+            const parts = name.trim().split(/\s+/);
+            const initials = [];
+            
+            for (const part of parts) {
+                if (part) {
+                    if (part.includes('-')) {
+                        const init = part.split('-').map(p => p[0].toUpperCase() + '.').join('-');
+                        initials.push(init);
+                    } else {
+                        initials.push(part[0].toUpperCase() + '.');
+                    }
+                }
+            }
+            
+            return initials.join(' ');
+        }
+
+        function formatAuthorName(author) {
+            author = author.trim().replace(/~/g, ' ');
+            author = author.split(/\s+/).join(' ');
+            
+            if (author.includes(',')) {
+                const parts = author.split(',').map(p => p.trim());
+                if (parts.length === 2) {
+                    const lastName = parts[0];
+                    const firstNames = parts[1];
+                    const initials = getInitials(firstNames);
+                    return `${initials} ${lastName}`;
+                }
+            }
+            
+            const parts = author.split(/\s+/);
+            if (parts.length === 0) return "";
+            
+            const lastName = parts[parts.length - 1];
+            
+            if (parts.length > 1) {
+                const firstMiddle = parts.slice(0, -1).join(' ');
+                const initials = getInitials(firstMiddle);
+                return `${initials} ${lastName}`;
+            } else {
+                return lastName;
+            }
+        }
+
+        function formatAuthors(authorString) {
+            authorString = authorString.replace(/[{}]/g, '');
+            const andParts = authorString.split(/\s+and\s+/);
+            const formattedAuthors = [];
+            
+            for (const author of andParts) {
+                const trimmed = author.trim();
+                if (!trimmed) continue;
+                
+                const formatted = formatAuthorName(trimmed);
+                if (formatted) {
+                    formattedAuthors.push(formatted);
+                }
+            }
+            
+            if (formattedAuthors.length === 0) return "";
+            if (formattedAuthors.length === 1) return formattedAuthors[0];
+            return formattedAuthors.join(' and ');
+        }
+
+        function normalizeForComparison(s) {
+            s = s.replace(/\\['`\^"~=.](\{)?([a-zA-Z])\}?/g, '$2');
+            s = s.replace(/\\[a-zA-Z]+\{([^}]+)\}/g, '$1');
+            s = s.replace(/\\/g, '');
+            s = s.replace(/[.:,;-]/g, ' ');
+            s = s.split(/\s+/).join(' ');
+            return s.toLowerCase();
+        }
+
+        function abbreviateJournal(journalName) {
+            const journalClean = journalName.replace(/[{}]/g, '').trim();
+            const normalized = normalizeForComparison(journalClean);
+            
+            for (const [full, abbrev] of Object.entries(JOURNAL_ABBREV)) {
+                if (normalizeForComparison(full) === normalized) {
+                    return abbrev;
+                }
+            }
+            
+            return journalClean;
+        }
+
+        function processBibFile(content, options) {
+            const authorPattern = /(\s+author\s*=\s*\{)([^}]+)(\})/gi;
+            const journalPattern = /(\s+journal\s*=\s*\{)([^}]+)(\})/gi;
+            
+            let result = content;
+            let stats = {
+                authorsProcessed: 0,
+                journalsProcessed: 0,
+                duplicatesRemoved: 0
+            };
+            
+            if (options.abbreviateAuthors) {
+                result = result.replace(authorPattern, (match, prefix, authors, suffix) => {
+                    stats.authorsProcessed++;
+                    const formatted = formatAuthors(authors);
+                    return `${prefix}${formatted}${suffix}`;
+                });
+            }
+            
+            if (options.abbreviateJournals) {
+                result = result.replace(journalPattern, (match, prefix, journal, suffix) => {
+                    const abbreviated = abbreviateJournal(journal);
+                    if (abbreviated !== journal.replace(/[{}]/g, '').trim()) {
+                        stats.journalsProcessed++;
+                    }
+                    return `${prefix}${abbreviated}${suffix}`;
+                });
+            }
+            
+            return { content: result, stats };
+        }
+
+        function processBblFile(content, options) {
+            const lines = content.split('\n');
+            const output = [];
+            let inBibitem = false;
+            let currentBibitem = [];
+            let bibitemKey = null;
+            const seenKeys = new Set();
+            const seenContent = new Set();
+            let stats = {
+                authorsProcessed: 0,
+                journalsProcessed: 0,
+                duplicatesRemoved: 0
+            };
+            
+            for (const line of lines) {
+                if (line.trim().startsWith('\\bibitem{')) {
+                    if (currentBibitem.length > 0 && bibitemKey) {
+                        const contentHash = currentBibitem.slice(1).join('').toLowerCase().replace(/\s+/g, '');
+                        
+                        if (options.removeDuplicates && seenContent.has(contentHash)) {
+                            stats.duplicatesRemoved++;
+                        } else {
+                            seenKeys.add(bibitemKey);
+                            seenContent.add(contentHash);
+                            
+                            const processed = processBibitemEntry(currentBibitem, options, stats);
+                            output.push(...processed);
+                            output.push('');
+                        }
+                    }
+                    
+                    const match = line.match(/\\bibitem\{([^}]+)\}/);
+                    if (match) {
+                        bibitemKey = match[1];
+                        currentBibitem = [line];
+                        inBibitem = true;
+                    }
+                } else if (line.trim().startsWith('\\end{thebibliography}')) {
+                    if (currentBibitem.length > 0 && bibitemKey) {
+                        const contentHash = currentBibitem.slice(1).join('').toLowerCase().replace(/\s+/g, '');
+                        
+                        if (options.removeDuplicates && seenContent.has(contentHash)) {
+                            stats.duplicatesRemoved++;
+                        } else {
+                            const processed = processBibitemEntry(currentBibitem, options, stats);
+                            output.push(...processed);
+                            output.push('');
+                        }
+                    }
+                    output.push(line);
+                    inBibitem = false;
+                } else if (inBibitem) {
+                    currentBibitem.push(line);
+                } else {
+                    output.push(line);
+                }
+            }
+            
+            return { content: output.join('\n'), stats };
+        }
+
+        function processBibitemEntry(lines, options, stats) {
+            const result = [lines[0]];
+            const entryText = lines.slice(1).join('\n');
+            const parts = entryText.split('\\newblock');
+            
+            if (parts.length >= 1) {
+                let authorPart = parts[0].trim().replace(/\.$/, '');
+                
+                if (options.abbreviateAuthors && authorPart) {
+                    const formatted = formatAuthors(authorPart);
+                    if (formatted) {
+                        stats.authorsProcessed++;
+                        result.push(formatted + '.');
+                    }
+                } else if (authorPart) {
+                    result.push(authorPart + '.');
+                }
+                
+                for (let i = 1; i < parts.length; i++) {
+                    let part = parts[i].trim();
+                    if (part) {
+                        if (options.abbreviateJournals) {
+                            const journalMatch = part.match(/\{\\em ([^}]+)\}/);
+                            if (journalMatch) {
+                                const journal = journalMatch[1];
+                                const abbrev = abbreviateJournal(journal);
+                                if (abbrev !== journal) {
+                                    stats.journalsProcessed++;
+                                }
+                                part = part.replace(`{\\em ${journal}}`, `{\\em ${abbrev}}`);
+                            }
+                        }
+                        result.push('\\newblock ' + part);
+                    }
+                }
+            }
+            
+            return result;
+        }
+
+        // Event handlers
+        dropZone.addEventListener('click', () => fileInput.click());
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+        
+        processButton.addEventListener('click', processFile);
+        
+        function handleFile(file) {
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (ext !== 'bib' && ext !== 'bbl') {
+                showStatus('Please select a .bib or .bbl file', 'error');
+                return;
+            }
+            
+            currentFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                currentContent = e.target.result;
+                processButton.disabled = false;
+                dropZone.querySelector('.drop-zone-text').textContent = `File loaded: ${file.name}`;
+                dropZone.querySelector('.drop-zone-subtext').textContent = 'Click "Process File" to format';
+                showStatus('File loaded successfully! Click "Process File" to continue.', 'success');
+            };
+            reader.readAsText(file);
+        }
+        
+        function processFile() {
+            if (!currentContent || !currentFile) return;
+            
+            const options = {
+                abbreviateAuthors: document.getElementById('abbreviateAuthors').checked,
+                abbreviateJournals: document.getElementById('abbreviateJournals').checked,
+                removeDuplicates: document.getElementById('removeDuplicates').checked
+            };
+            
+            const ext = currentFile.name.split('.').pop().toLowerCase();
+            const result = ext === 'bib' 
+                ? processBibFile(currentContent, options)
+                : processBblFile(currentContent, options);
+            
+            showStats(result.stats);
+            showPreview(result.content);
+            downloadFile(result.content, ext);
+            
+            showStatus(
+                `✓ Processing complete! ${result.stats.authorsProcessed} authors and ${result.stats.journalsProcessed} journals formatted.`,
+                'success'
+            );
+        }
+        
+        function showStats(stats) {
+            statsDiv.innerHTML = `
+                <div class="stat-box">
+                    <div class="stat-number">${stats.authorsProcessed}</div>
+                    <div class="stat-label">Authors Formatted</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number">${stats.journalsProcessed}</div>
+                    <div class="stat-label">Journals Abbreviated</div>
+                </div>
+            `;
+            statsDiv.style.display = 'grid';
+        }
+        
+        function showPreview(content) {
+            preview.textContent = content.substring(0, 1000) + '\n\n... (showing first 1000 characters)';
+            preview.style.display = 'block';
+        }
+        
+        function showStatus(message, type) {
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+        
+        function downloadFile(content, ext) {
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = currentFile.name.replace(`.${ext}`, `_formatted.${ext}`);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
