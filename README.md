@@ -2,7 +2,7 @@
 
 A free, open-source web tool to automatically format BibTeX and BBL bibliography files.
 
-🔗 **[Try it now!](https://YOUR-USERNAME.github.io/bibtex-formatter/)**
+🔗 **[Try it now!](https://cnrs-oguzumut.github.io/bibtex-formatter/)**
 
 ![BibTeX Formatter Screenshot](screenshot.png)
 
