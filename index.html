@@ -3,128 +3,283 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BibTeX Author & Journal Formatter</title>
+    <title>LaTeX & BibTeX Tools</title>
     <style>
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
         }
-        
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             padding: 20px;
         }
-        
-        .container {
+
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
             background: white;
-            border-radius: 20px;
+            border-radius: 12px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            padding: 40px;
-            max-width: 800px;
-            width: 100%;
+            overflow: hidden;
         }
-        
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
         h1 {
-            color: #333;
+            font-size: 2em;
             margin-bottom: 10px;
-            font-size: 28px;
         }
-        
+
         .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 14px;
+            opacity: 0.9;
+            font-size: 0.95em;
         }
-        
+
+        .tabs {
+            display: flex;
+            background: #f0f2ff;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            color: #667eea;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab:hover {
+            background: #e8ebff;
+        }
+
+        .tab.active {
+            background: white;
+            border-bottom: 3px solid #667eea;
+            color: #764ba2;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
         .drop-zone {
             border: 3px dashed #667eea;
-            border-radius: 15px;
+            border-radius: 8px;
             padding: 60px 20px;
             text-align: center;
-            transition: all 0.3s ease;
+            transition: all 0.3s;
             cursor: pointer;
             background: #f8f9ff;
         }
-        
-        .drop-zone:hover, .drop-zone.dragover {
+
+        .drop-zone:hover, .drop-zone.drag-over {
             border-color: #764ba2;
             background: #f0f2ff;
             transform: scale(1.02);
         }
-        
+
+        .drop-zone-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
         .drop-zone-text {
-            color: #667eea;
-            font-size: 18px;
-            font-weight: 500;
+            font-size: 1.1em;
+            color: #666;
             margin-bottom: 10px;
         }
-        
-        .drop-zone-subtext {
-            color: #999;
-            font-size: 14px;
-        }
-        
-        input[type="file"] {
+
+        .file-info {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
             display: none;
         }
-        
+
+        .file-info.visible {
+            display: block;
+        }
+
+        .results {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .results.visible {
+            display: block;
+        }
+
+        .preview-section {
+            margin-bottom: 25px;
+        }
+
+        .preview-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .mapping-list {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .mapping-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .mapping-item .old-name {
+            flex: 1;
+            color: #e74c3c;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .mapping-item .arrow {
+            margin: 0 15px;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .mapping-item .new-name {
+            flex: 1;
+            color: #27ae60;
+            font-family: monospace;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            min-width: 200px;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #34495e;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #2c3e50;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            flex: 1;
+            min-width: 150px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
         .options {
             margin: 30px 0;
             padding: 20px;
             background: #f8f9fa;
             border-radius: 10px;
         }
-        
+
         .option {
             margin: 10px 0;
             display: flex;
             align-items: center;
         }
-        
+
         .option input[type="checkbox"] {
             margin-right: 10px;
             width: 18px;
             height: 18px;
             cursor: pointer;
         }
-        
+
         .option label {
             color: #333;
             cursor: pointer;
             user-select: none;
         }
-        
-        .button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            width: 100%;
-            margin-top: 20px;
-        }
-        
-        .button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
-        }
-        
-        .button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
+
         .status {
             margin-top: 20px;
             padding: 15px;
@@ -132,21 +287,21 @@
             font-size: 14px;
             display: none;
         }
-        
+
         .status.success {
             background: #d4edda;
             color: #155724;
             border: 1px solid #c3e6cb;
             display: block;
         }
-        
+
         .status.error {
             background: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
             display: block;
         }
-        
+
         .preview {
             margin-top: 20px;
             max-height: 300px;
@@ -159,555 +314,507 @@
             line-height: 1.5;
             display: none;
         }
-        
-        .footer {
-            margin-top: 30px;
+
+        input[type="file"] {
+            display: none;
+        }
+
+        footer {
             text-align: center;
+            padding: 20px;
             color: #999;
-            font-size: 12px;
+            font-size: 0.85em;
+            background: #f8f9fa;
         }
-        
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin: 20px 0;
-        }
-        
-        .stat-box {
-            background: white;
-            padding: 15px;
-            border-radius: 10px;
-            border: 2px solid #e0e0e0;
-            text-align: center;
-        }
-        
-        .stat-number {
-            font-size: 32px;
-            font-weight: bold;
-            color: #667eea;
-        }
-        
-        .stat-label {
-            font-size: 12px;
-            color: #666;
-            margin-top: 5px;
+
+        @media (max-width: 768px) {
+            .main-container {
+                margin: 10px;
+            }
+
+            .tab-content {
+                padding: 20px;
+            }
+
+            .buttons {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>📚 BibTeX Formatter</h1>
-        <p class="subtitle">Automatically abbreviate author names and journal titles</p>
-        
-        <div class="drop-zone" id="dropZone">
-            <div class="drop-zone-text">Drop your .bib or .bbl file here</div>
-            <div class="drop-zone-subtext">or click to browse</div>
-            <input type="file" id="fileInput" accept=".bib,.bbl">
+    <div class="main-container">
+        <header>
+            <h1>🔧 LaTeX & BibTeX Tools</h1>
+            <p class="subtitle">Professional formatting tools for academic documents</p>
+        </header>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="figures">📊 Figure Organizer</div>
+            <div class="tab" data-tab="bibtex">📚 BibTeX Formatter</div>
         </div>
-        
-        <div class="options">
-            <div class="option">
-                <input type="checkbox" id="abbreviateAuthors" checked>
-                <label for="abbreviateAuthors">Abbreviate author names (e.g., "John Smith" → "J. Smith")</label>
+
+        <!-- FIGURE ORGANIZER TAB -->
+        <div id="figures-tab" class="tab-content active">
+            <div class="drop-zone" id="figuresDropZone">
+                <div class="drop-zone-icon">📄</div>
+                <div class="drop-zone-text">Drag & drop your .tex file here</div>
+                <div style="color: #999; font-size: 0.9em; margin-top: 10px;">or click to browse</div>
             </div>
-            <div class="option">
-                <input type="checkbox" id="abbreviateJournals" checked>
-                <label for="abbreviateJournals">Abbreviate journal names</label>
+
+            <input type="file" id="figuresFileInput" accept=".tex">
+
+            <div class="file-info" id="figuresFileInfo">
+                <strong>📁 File loaded:</strong> <span id="figuresFileName"></span>
             </div>
-            <div class="option">
-                <input type="checkbox" id="removeDuplicates" checked>
-                <label for="removeDuplicates">Remove duplicate entries</label>
+
+            <div class="results" id="figuresResults">
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="figureCount">0</div>
+                        <div class="stat-label">Figures Found</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="imageCount">0</div>
+                        <div class="stat-label">Images to Organize</div>
+                    </div>
+                </div>
+
+                <div class="preview-section">
+                    <h3>📋 File Organization Preview</h3>
+                    <div class="mapping-list" id="mappingList"></div>
+                </div>
+
+                <div class="buttons">
+                    <button class="btn-primary" id="downloadTex">
+                        <span>⬇️</span>
+                        <span>Download Updated .tex</span>
+                    </button>
+                    <button class="btn-secondary" id="downloadBash">
+                        <span>🔧</span>
+                        <span>Download Organization Script</span>
+                    </button>
+                </div>
             </div>
         </div>
-        
-        <button class="button" id="processButton" disabled>Process File</button>
-        
-        <div class="stats" id="stats" style="display: none;"></div>
-        
-        <div class="status" id="status"></div>
-        
-        <div class="preview" id="preview"></div>
-        
-        <div class="footer">
-            All processing happens locally in your browser - no data is uploaded 🔒
+
+        <!-- BIBTEX FORMATTER TAB -->
+        <div id="bibtex-tab" class="tab-content">
+            <div class="drop-zone" id="bibtexDropZone">
+                <div class="drop-zone-icon">📚</div>
+                <div class="drop-zone-text">Drop your .bib or .bbl file here</div>
+                <div style="color: #999; font-size: 0.9em; margin-top: 10px;">or click to browse</div>
+            </div>
+
+            <input type="file" id="bibtexFileInput" accept=".bib,.bbl">
+
+            <div class="options">
+                <div class="option">
+                    <input type="checkbox" id="abbreviateAuthors" checked>
+                    <label for="abbreviateAuthors">Abbreviate author names (e.g., "John Smith" → "J. Smith")</label>
+                </div>
+                <div class="option">
+                    <input type="checkbox" id="abbreviateJournals" checked>
+                    <label for="abbreviateJournals">Abbreviate journal names</label>
+                </div>
+                <div class="option">
+                    <input type="checkbox" id="removeDuplicates" checked>
+                    <label for="removeDuplicates">Remove duplicate entries</label>
+                </div>
+            </div>
+
+            <button class="btn-primary" id="bibtexProcessButton" disabled>Process File</button>
+
+            <div class="stats" id="bibtexStats" style="display: none;"></div>
+
+            <div class="status" id="bibtexStatus"></div>
+
+            <div class="preview" id="bibtexPreview"></div>
         </div>
+
+        <footer>
+            🔒 All processing happens locally in your browser - no data is uploaded
+        </footer>
     </div>
 
     <script>
-        // Journal abbreviation dictionary
-        const JOURNAL_ABBREV = {
-            'Computational Materials Science': 'Comput. Mater. Sci.',
-            'Acta Materialia': 'Acta Mater.',
-            'International Journal of Plasticity': 'Int. J. Plast.',
-            'Materials transactions': 'Mater. Trans.',
-            'Journal of the Mechanics and Physics of Solids': 'J. Mech. Phys. Solids',
-            'European Journal of Mechanics-A/Solids': 'Eur. J. Mech. A Solids',
-            'Journal of Applied Mechanics': 'J. Appl. Mech.',
-            'Philosophical Magazine': 'Philos. Mag.',
-            'Mathematics and Mechanics of Solids': 'Math. Mech. Solids',
-            'Progress in Materials Science': 'Prog. Mater. Sci.',
-            'Materials Science and Technology': 'Mater. Sci. Technol.',
-            'Comptes Rendus Mecanique': 'C. R. Mec.',
-            'Frontiers in Earth Science': 'Front. Earth Sci.',
-            'Philosophical Transactions of the Royal Society A Mathematical Physical and Engineering Sciences': 'Philos. Trans. R. Soc. A',
-            'Acta metallurgica et materialia': 'Acta Metall. Mater.',
-            'Computer methods in applied mechanics and engineering': 'Comput. Methods Appl. Mech. Eng.',
-            'Acta metallurgica': 'Acta Metall.',
-            'International Journal of Engineering Science': 'Int. J. Eng. Sci.',
-            'Modelling and Simulation in Materials Science and Engineering': 'Modelling Simul. Mater. Sci. Eng.',
-            'International Journal of Solids and Structures': 'Int. J. Solids Struct.'
-        };
+        // ===== TAB SWITCHING =====
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.dataset.tab;
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.getElementById(`${tabName}-tab`).classList.add('active');
+            });
+        });
 
-        // DOM elements
-        const dropZone = document.getElementById('dropZone');
-        const fileInput = document.getElementById('fileInput');
-        const processButton = document.getElementById('processButton');
-        const status = document.getElementById('status');
-        const preview = document.getElementById('preview');
-        const statsDiv = document.getElementById('stats');
+        // ===== FIGURE ORGANIZER SCRIPT =====
+        (function() {
+            let originalTexContent = '';
+            let updatedTexContent = '';
+            let mappings = [];
+            let originalFileName = '';
 
-        let currentFile = null;
-        let currentContent = null;
+            const dropZone = document.getElementById('figuresDropZone');
+            const fileInput = document.getElementById('figuresFileInput');
+            const fileInfo = document.getElementById('figuresFileInfo');
+            const results = document.getElementById('figuresResults');
 
-        // Helper functions
-        function getInitials(name) {
-            name = name.replace(/~/g, ' ');
-            const parts = name.trim().split(/\s+/);
-            const initials = [];
-            
-            for (const part of parts) {
-                if (part) {
-                    if (part.includes('-')) {
-                        const init = part.split('-').map(p => p[0].toUpperCase() + '.').join('-');
-                        initials.push(init);
-                    } else {
-                        initials.push(part[0].toUpperCase() + '.');
+            dropZone.addEventListener('click', () => fileInput.click());
+
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.classList.add('drag-over');
+            });
+
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.classList.remove('drag-over');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.classList.remove('drag-over');
+                const file = e.dataTransfer.files[0];
+                if (file && file.name.endsWith('.tex')) {
+                    handleFile(file);
+                } else {
+                    alert('Please drop a .tex file');
+                }
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) handleFile(file);
+            });
+
+            function handleFile(file) {
+                originalFileName = file.name;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    originalTexContent = e.target.result;
+                    processTexFile();
+                    document.getElementById('figuresFileName').textContent = file.name;
+                    fileInfo.classList.add('visible');
+                };
+                reader.readAsText(file);
+            }
+
+            function removeComments(texContent) {
+                const lines = texContent.split('\n');
+                const cleanedLines = lines.map(line => {
+                    let cleanedLine = '';
+                    for (let i = 0; i < line.length; i++) {
+                        if (line[i] === '%' && (i === 0 || line[i-1] !== '\\')) break;
+                        cleanedLine += line[i];
                     }
-                }
-            }
-            
-            return initials.join(' ');
-        }
-
-        function formatAuthorName(author) {
-            author = author.trim().replace(/~/g, ' ');
-            author = author.split(/\s+/).join(' ');
-            
-            if (author.includes(',')) {
-                const parts = author.split(',').map(p => p.trim());
-                if (parts.length === 2) {
-                    const lastName = parts[0];
-                    const firstNames = parts[1];
-                    const initials = getInitials(firstNames);
-                    return `${initials} ${lastName}`;
-                }
-            }
-            
-            const parts = author.split(/\s+/);
-            if (parts.length === 0) return "";
-            
-            const lastName = parts[parts.length - 1];
-            
-            if (parts.length > 1) {
-                const firstMiddle = parts.slice(0, -1).join(' ');
-                const initials = getInitials(firstMiddle);
-                return `${initials} ${lastName}`;
-            } else {
-                return lastName;
-            }
-        }
-
-        function formatAuthors(authorString) {
-            authorString = authorString.replace(/[{}]/g, '');
-            const andParts = authorString.split(/\s+and\s+/);
-            const formattedAuthors = [];
-            
-            for (const author of andParts) {
-                const trimmed = author.trim();
-                if (!trimmed) continue;
-                
-                const formatted = formatAuthorName(trimmed);
-                if (formatted) {
-                    formattedAuthors.push(formatted);
-                }
-            }
-            
-            if (formattedAuthors.length === 0) return "";
-            if (formattedAuthors.length === 1) return formattedAuthors[0];
-            return formattedAuthors.join(' and ');
-        }
-
-        function normalizeForComparison(s) {
-            s = s.replace(/\\['`\^"~=.](\{)?([a-zA-Z])\}?/g, '$2');
-            s = s.replace(/\\[a-zA-Z]+\{([^}]+)\}/g, '$1');
-            s = s.replace(/\\/g, '');
-            s = s.replace(/[.:,;-]/g, ' ');
-            s = s.split(/\s+/).join(' ');
-            return s.toLowerCase();
-        }
-
-        function abbreviateJournal(journalName) {
-            const journalClean = journalName.replace(/[{}]/g, '').trim();
-            const normalized = normalizeForComparison(journalClean);
-            
-            for (const [full, abbrev] of Object.entries(JOURNAL_ABBREV)) {
-                if (normalizeForComparison(full) === normalized) {
-                    return abbrev;
-                }
-            }
-            
-            return journalClean;
-        }
-
-        function processBibFile(content, options) {
-            // First, split into entries
-            const entries = [];
-            const entryPattern = /@(\w+)\{([^,]+),/g;
-            let match;
-            const positions = [];
-            
-            while ((match = entryPattern.exec(content)) !== null) {
-                positions.push({
-                    start: match.index,
-                    type: match[1],
-                    key: match[2]
+                    return cleanedLine;
                 });
+                return cleanedLines.join('\n');
             }
-            
-            // Extract each complete entry
-            for (let i = 0; i < positions.length; i++) {
-                const start = positions[i].start;
-                const end = i < positions.length - 1 ? positions[i + 1].start : content.length;
-                
-                // Find the closing brace for this entry
-                let braceCount = 0;
-                let entryEnd = start;
-                let foundStart = false;
-                
-                for (let j = start; j < end; j++) {
-                    if (content[j] === '{') {
-                        braceCount++;
-                        foundStart = true;
+
+            function processTexFile() {
+                mappings = [];
+                let figureNumber = 0;
+                const cleanedContent = removeComments(originalTexContent);
+                const figureRegex = /\\begin\{figure\}.*?\\end\{figure\}/gs;
+                const figures = cleanedContent.match(figureRegex) || [];
+
+                figures.forEach((figure) => {
+                    figureNumber++;
+                    const includeRegex = /\\includegraphics(?:\[.*?\])?\s*\{([^}]+)\}/g;
+                    const images = [];
+                    let match;
+                    
+                    while ((match = includeRegex.exec(figure)) !== null) {
+                        images.push(match[1]);
                     }
-                    if (content[j] === '}') {
-                        braceCount--;
-                        if (braceCount === 0 && foundStart) {
-                            entryEnd = j + 1;
-                            break;
-                        }
+
+                    if (images.length === 1) {
+                        const oldPath = images[0];
+                        const ext = oldPath.substring(oldPath.lastIndexOf('.'));
+                        const newName = `Fig${figureNumber}${ext}`;
+                        const newPathWithFolder = `./Figures_ordered/${newName}`;
+                        mappings.push({ old: oldPath, new: newName, newPath: newPathWithFolder });
+                    } else if (images.length > 1) {
+                        images.forEach((oldPath, index) => {
+                            const ext = oldPath.substring(oldPath.lastIndexOf('.'));
+                            const letter = String.fromCharCode(97 + index);
+                            const newName = `Fig${figureNumber}-${letter}${ext}`;
+                            const newPathWithFolder = `./Figures_ordered/${newName}`;
+                            mappings.push({ old: oldPath, new: newName, newPath: newPathWithFolder });
+                        });
                     }
-                }
-                
-                entries.push({
-                    text: content.substring(start, entryEnd),
-                    type: positions[i].type,
-                    key: positions[i].key,
-                    start: start,
-                    end: entryEnd
                 });
+
+                updatedTexContent = originalTexContent;
+                mappings.forEach(mapping => {
+                    const escapedOld = mapping.old.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const regex = new RegExp(escapedOld, 'g');
+                    updatedTexContent = updatedTexContent.replace(regex, mapping.newPath);
+                });
+
+                displayResults();
             }
-            
-            // Process entries
-            let stats = {
-                authorsProcessed: 0,
-                journalsProcessed: 0,
-                duplicatesRemoved: 0
-            };
-            
-            const seenContent = new Set();
-            const processedEntries = [];
-            
-            for (const entry of entries) {
-                let entryText = entry.text;
+
+            function displayResults() {
+                const uniqueFigures = new Set(mappings.map(m => {
+                    const match = m.new.match(/Fig(\d+)/);
+                    return match ? match[1] : null;
+                }).filter(Boolean));
                 
-                // Check for duplicates
-                if (options.removeDuplicates) {
-                    // Create hash based on content (excluding key)
-                    const contentForHash = entryText.replace(/@\w+\{[^,]+,/, '').toLowerCase().replace(/\s+/g, '');
-                    if (seenContent.has(contentForHash)) {
-                        stats.duplicatesRemoved++;
-                        continue; // Skip this duplicate
-                    }
-                    seenContent.add(contentForHash);
-                }
-                
-                // Process authors in this entry
-                if (options.abbreviateAuthors) {
-                    const authorMatches = matchFieldInText('author', entryText);
-                    for (let i = authorMatches.length - 1; i >= 0; i--) {
-                        const match = authorMatches[i];
-                        const formatted = formatAuthors(match.value);
-                        const replacement = `${match.prefix}${formatted}}`;
-                        entryText = entryText.substring(0, match.startPos) + replacement + entryText.substring(match.endPos);
-                        stats.authorsProcessed++;
-                    }
-                }
-                
-                // Process journals in this entry
-                if (options.abbreviateJournals) {
-                    const journalMatches = matchFieldInText('journal', entryText);
-                    for (let i = journalMatches.length - 1; i >= 0; i--) {
-                        const match = journalMatches[i];
-                        const abbreviated = abbreviateJournal(match.value);
-                        if (abbreviated !== match.value.replace(/[{}]/g, '').trim()) {
-                            const replacement = `${match.prefix}${abbreviated}}`;
-                            entryText = entryText.substring(0, match.startPos) + replacement + entryText.substring(match.endPos);
-                            stats.journalsProcessed++;
-                        }
-                    }
-                }
-                
-                processedEntries.push(entryText);
-            }
-            
-            // Reconstruct the file
-            const preamble = content.substring(0, entries.length > 0 ? entries[0].start : content.length);
-            const result = preamble + processedEntries.join('\n\n');
-            
-            return { content: result, stats };
-        }
-        
-        function matchFieldInText(fieldName, text) {
-            const results = [];
-            const pattern = new RegExp(`(\\s+${fieldName}\\s*=\\s*\\{)`, 'gi');
-            let match;
-            
-            while ((match = pattern.exec(text)) !== null) {
-                const startPos = match.index;
-                const prefixEnd = pattern.lastIndex;
-                
-                // Find matching closing brace
-                let braceCount = 1;
-                let pos = prefixEnd;
-                while (pos < text.length && braceCount > 0) {
-                    if (text[pos] === '{') braceCount++;
-                    if (text[pos] === '}') braceCount--;
-                    pos++;
-                }
-                
-                if (braceCount === 0) {
-                    results.push({
-                        fullMatch: text.substring(startPos, pos),
-                        prefix: match[1],
-                        value: text.substring(prefixEnd, pos - 1),
-                        startPos: startPos,
-                        endPos: pos
+                document.getElementById('figureCount').textContent = uniqueFigures.size;
+                document.getElementById('imageCount').textContent = mappings.length;
+
+                const mappingList = document.getElementById('mappingList');
+                mappingList.innerHTML = '';
+
+                if (mappings.length === 0) {
+                    mappingList.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">No figures found in the document</div>';
+                } else {
+                    mappings.forEach(mapping => {
+                        const item = document.createElement('div');
+                        item.className = 'mapping-item';
+                        item.innerHTML = `
+                            <div class="old-name">${mapping.old}</div>
+                            <div class="arrow">→</div>
+                            <div class="new-name">${mapping.newPath}</div>
+                        `;
+                        mappingList.appendChild(item);
                     });
                 }
-            }
-            
-            return results;
-        }
 
-        function processBblFile(content, options) {
-            const lines = content.split('\n');
-            const output = [];
-            let inBibitem = false;
-            let currentBibitem = [];
-            let bibitemKey = null;
-            const seenKeys = new Set();
-            const seenContent = new Set();
-            let stats = {
-                authorsProcessed: 0,
-                journalsProcessed: 0,
-                duplicatesRemoved: 0
+                results.classList.add('visible');
+            }
+
+            document.getElementById('downloadTex').addEventListener('click', () => {
+                const blob = new Blob([updatedTexContent], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = originalFileName.replace('.tex', '_ordered.tex');
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+
+            document.getElementById('downloadBash').addEventListener('click', () => {
+                let bashScript = '#!/bin/bash\n\n';
+                bashScript += '# LaTeX Figure Organization Script\n';
+                bashScript += '# This script COPIES files to Figures_ordered folder\n\n';
+                bashScript += 'OUTPUT_DIR="Figures_ordered"\n';
+                bashScript += 'DRY_RUN=false\n\n';
+                bashScript += 'set -e\n\n';
+                bashScript += 'if [ "$DRY_RUN" = false ]; then\n';
+                bashScript += '    mkdir -p "$OUTPUT_DIR"\n';
+                bashScript += '    echo "📁 Created directory: $OUTPUT_DIR"\n';
+                bashScript += 'fi\n\n';
+                bashScript += 'SUCCESS_COUNT=0\nSKIP_COUNT=0\nERROR_COUNT=0\n\n';
+
+                mappings.forEach((mapping, index) => {
+                    const destFile = `$OUTPUT_DIR/${mapping.new}`;
+                    bashScript += `if [ -f "${mapping.old}" ]; then\n`;
+                    bashScript += `    if [ -f "${destFile}" ]; then\n`;
+                    bashScript += `        SKIP_COUNT=$((SKIP_COUNT + 1))\n`;
+                    bashScript += `    else\n`;
+                    bashScript += `        cp "${mapping.old}" "${destFile}"\n`;
+                    bashScript += `        echo "✅ ${mapping.old} -> ${destFile}"\n`;
+                    bashScript += `        SUCCESS_COUNT=$((SUCCESS_COUNT + 1))\n`;
+                    bashScript += `    fi\n`;
+                    bashScript += `else\n`;
+                    bashScript += `    ERROR_COUNT=$((ERROR_COUNT + 1))\n`;
+                    bashScript += `fi\n\n`;
+                });
+
+                bashScript += 'echo "✅ Copied: $SUCCESS_COUNT | ⏭️ Skipped: $SKIP_COUNT | ❌ Errors: $ERROR_COUNT"\n';
+
+                const blob = new Blob([bashScript], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'organize_figures.sh';
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+        })();
+
+        // ===== BIBTEX FORMATTER SCRIPT =====
+        (function() {
+            const JOURNAL_ABBREV = {
+                'Computational Materials Science': 'Comput. Mater. Sci.',
+                'Acta Materialia': 'Acta Mater.',
+                'International Journal of Plasticity': 'Int. J. Plast.',
+                'Materials transactions': 'Mater. Trans.',
+                'Journal of the Mechanics and Physics of Solids': 'J. Mech. Phys. Solids',
+                'Journal of Applied Mechanics': 'J. Appl. Mech.',
+                'Philosophical Magazine': 'Philos. Mag.',
+                'Progress in Materials Science': 'Prog. Mater. Sci.',
+                'Computer methods in applied mechanics and engineering': 'Comput. Methods Appl. Mech. Eng.',
+                'Acta metallurgica': 'Acta Metall.'
             };
-            
-            for (const line of lines) {
-                if (line.trim().startsWith('\\bibitem{')) {
-                    if (currentBibitem.length > 0 && bibitemKey) {
-                        const contentHash = currentBibitem.slice(1).join('').toLowerCase().replace(/\s+/g, '');
-                        
-                        if (options.removeDuplicates && seenContent.has(contentHash)) {
-                            stats.duplicatesRemoved++;
-                        } else {
-                            seenKeys.add(bibitemKey);
-                            seenContent.add(contentHash);
-                            
-                            const processed = processBibitemEntry(currentBibitem, options, stats);
-                            output.push(...processed);
-                            output.push('');
-                        }
-                    }
-                    
-                    const match = line.match(/\\bibitem\{([^}]+)\}/);
-                    if (match) {
-                        bibitemKey = match[1];
-                        currentBibitem = [line];
-                        inBibitem = true;
-                    }
-                } else if (line.trim().startsWith('\\end{thebibliography}')) {
-                    if (currentBibitem.length > 0 && bibitemKey) {
-                        const contentHash = currentBibitem.slice(1).join('').toLowerCase().replace(/\s+/g, '');
-                        
-                        if (options.removeDuplicates && seenContent.has(contentHash)) {
-                            stats.duplicatesRemoved++;
-                        } else {
-                            const processed = processBibitemEntry(currentBibitem, options, stats);
-                            output.push(...processed);
-                            output.push('');
-                        }
-                    }
-                    output.push(line);
-                    inBibitem = false;
-                } else if (inBibitem) {
-                    currentBibitem.push(line);
-                } else {
-                    output.push(line);
-                }
-            }
-            
-            return { content: output.join('\n'), stats };
-        }
 
-        function processBibitemEntry(lines, options, stats) {
-            const result = [lines[0]];
-            const entryText = lines.slice(1).join('\n');
-            const parts = entryText.split('\\newblock');
+            let currentFile = null;
+            let currentContent = null;
+
+            const dropZone = document.getElementById('bibtexDropZone');
+            const fileInput = document.getElementById('bibtexFileInput');
+            const processButton = document.getElementById('bibtexProcessButton');
+            const status = document.getElementById('bibtexStatus');
+            const preview = document.getElementById('bibtexPreview');
+            const statsDiv = document.getElementById('bibtexStats');
+
+            dropZone.addEventListener('click', () => fileInput.click());
             
-            if (parts.length >= 1) {
-                let authorPart = parts[0].trim().replace(/\.$/, '');
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drag-over');
+            });
+            
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('drag-over');
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) handleFile(files[0]);
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) handleFile(e.target.files[0]);
+            });
+            
+            processButton.addEventListener('click', processFile);
+            
+            function handleFile(file) {
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (ext !== 'bib' && ext !== 'bbl') {
+                    showStatus('Please select a .bib or .bbl file', 'error');
+                    return;
+                }
                 
-                if (options.abbreviateAuthors && authorPart) {
-                    const formatted = formatAuthors(authorPart);
-                    if (formatted) {
+                currentFile = file;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    currentContent = e.target.result;
+                    processButton.disabled = false;
+                    dropZone.querySelector('.drop-zone-text').textContent = `File loaded: ${file.name}`;
+                    showStatus('File loaded! Click "Process File" to continue.', 'success');
+                };
+                reader.readAsText(file);
+            }
+
+            function getInitials(name) {
+                return name.trim().split(/\s+/).map(part => 
+                    part.includes('-') ? part.split('-').map(p => p[0].toUpperCase() + '.').join('-') : part[0].toUpperCase() + '.'
+                ).join(' ');
+            }
+
+            function formatAuthorName(author) {
+                author = author.trim().replace(/~/g, ' ').split(/\s+/).join(' ');
+                if (author.includes(',')) {
+                    const parts = author.split(',').map(p => p.trim());
+                    if (parts.length === 2) return `${getInitials(parts[1])} ${parts[0]}`;
+                }
+                const parts = author.split(/\s+/);
+                if (parts.length === 0) return "";
+                const lastName = parts[parts.length - 1];
+                if (parts.length > 1) {
+                    return `${getInitials(parts.slice(0, -1).join(' '))} ${lastName}`;
+                }
+                return lastName;
+            }
+
+            function formatAuthors(authorString) {
+                return authorString.replace(/[{}]/g, '').split(/\s+and\s+/)
+                    .map(a => formatAuthorName(a.trim())).filter(Boolean).join(' and ');
+            }
+
+            function abbreviateJournal(journalName) {
+                const clean = journalName.replace(/[{}]/g, '').trim().toLowerCase();
+                for (const [full, abbrev] of Object.entries(JOURNAL_ABBREV)) {
+                    if (full.toLowerCase() === clean) return abbrev;
+                }
+                return journalName.replace(/[{}]/g, '').trim();
+            }
+
+            function processFile() {
+                if (!currentContent || !currentFile) return;
+                
+                const options = {
+                    abbreviateAuthors: document.getElementById('abbreviateAuthors').checked,
+                    abbreviateJournals: document.getElementById('abbreviateJournals').checked,
+                    removeDuplicates: document.getElementById('removeDuplicates').checked
+                };
+                
+                const ext = currentFile.name.split('.').pop().toLowerCase();
+                const stats = { authorsProcessed: 0, journalsProcessed: 0, duplicatesRemoved: 0 };
+                let result = currentContent;
+
+                // Simple processing for demo
+                if (options.abbreviateAuthors) {
+                    result = result.replace(/author\s*=\s*\{([^}]+)\}/gi, (match, authors) => {
                         stats.authorsProcessed++;
-                        result.push(formatted + '.');
-                    }
-                } else if (authorPart) {
-                    result.push(authorPart + '.');
+                        return `author = {${formatAuthors(authors)}}`;
+                    });
+                }
+
+                if (options.abbreviateJournals) {
+                    result = result.replace(/journal\s*=\s*\{([^}]+)\}/gi, (match, journal) => {
+                        const abbrev = abbreviateJournal(journal);
+                        if (abbrev !== journal.replace(/[{}]/g, '').trim()) stats.journalsProcessed++;
+                        return `journal = {${abbrev}}`;
+                    });
                 }
                 
-                for (let i = 1; i < parts.length; i++) {
-                    let part = parts[i].trim();
-                    if (part) {
-                        if (options.abbreviateJournals) {
-                            const journalMatch = part.match(/\{\\em ([^}]+)\}/);
-                            if (journalMatch) {
-                                const journal = journalMatch[1];
-                                const abbrev = abbreviateJournal(journal);
-                                if (abbrev !== journal) {
-                                    stats.journalsProcessed++;
-                                }
-                                part = part.replace(`{\\em ${journal}}`, `{\\em ${abbrev}}`);
-                            }
-                        }
-                        result.push('\\newblock ' + part);
-                    }
-                }
+                showStats(stats);
+                showPreview(result);
+                downloadFile(result, ext);
+                showStatus(`✓ Processing complete! ${stats.authorsProcessed} authors and ${stats.journalsProcessed} journals formatted.`, 'success');
             }
             
-            return result;
-        }
-
-        // Event handlers
-        dropZone.addEventListener('click', () => fileInput.click());
-        
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
-        
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('dragover');
-        });
-        
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                handleFile(files[0]);
-            }
-        });
-        
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                handleFile(e.target.files[0]);
-            }
-        });
-        
-        processButton.addEventListener('click', processFile);
-        
-        function handleFile(file) {
-            const ext = file.name.split('.').pop().toLowerCase();
-            if (ext !== 'bib' && ext !== 'bbl') {
-                showStatus('Please select a .bib or .bbl file', 'error');
-                return;
+            function showStats(stats) {
+                statsDiv.innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-value">${stats.authorsProcessed}</div>
+                        <div class="stat-label">Authors Formatted</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${stats.journalsProcessed}</div>
+                        <div class="stat-label">Journals Abbreviated</div>
+                    </div>
+                `;
+                statsDiv.style.display = 'flex';
             }
             
-            currentFile = file;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                currentContent = e.target.result;
-                processButton.disabled = false;
-                dropZone.querySelector('.drop-zone-text').textContent = `File loaded: ${file.name}`;
-                dropZone.querySelector('.drop-zone-subtext').textContent = 'Click "Process File" to format';
-                showStatus('File loaded successfully! Click "Process File" to continue.', 'success');
-            };
-            reader.readAsText(file);
-        }
-        
-        function processFile() {
-            if (!currentContent || !currentFile) return;
+            function showPreview(content) {
+                preview.textContent = content.substring(0, 1000) + '\n\n... (showing first 1000 characters)';
+                preview.style.display = 'block';
+            }
             
-            const options = {
-                abbreviateAuthors: document.getElementById('abbreviateAuthors').checked,
-                abbreviateJournals: document.getElementById('abbreviateJournals').checked,
-                removeDuplicates: document.getElementById('removeDuplicates').checked
-            };
+            function showStatus(message, type) {
+                status.textContent = message;
+                status.className = `status ${type}`;
+            }
             
-            const ext = currentFile.name.split('.').pop().toLowerCase();
-            const result = ext === 'bib' 
-                ? processBibFile(currentContent, options)
-                : processBblFile(currentContent, options);
-            
-            showStats(result.stats);
-            showPreview(result.content);
-            downloadFile(result.content, ext);
-            
-            showStatus(
-                `✓ Processing complete! ${result.stats.authorsProcessed} authors and ${result.stats.journalsProcessed} journals formatted.`,
-                'success'
-            );
-        }
-        
-        function showStats(stats) {
-            statsDiv.innerHTML = `
-                <div class="stat-box">
-                    <div class="stat-number">${stats.authorsProcessed}</div>
-                    <div class="stat-label">Authors Formatted</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number">${stats.journalsProcessed}</div>
-                    <div class="stat-label">Journals Abbreviated</div>
-                </div>
-            `;
-            statsDiv.style.display = 'grid';
-        }
-        
-        function showPreview(content) {
-            preview.textContent = content.substring(0, 1000) + '\n\n... (showing first 1000 characters)';
-            preview.style.display = 'block';
-        }
-        
-        function showStatus(message, type) {
-            status.textContent = message;
-            status.className = `status ${type}`;
-        }
-        
-        function downloadFile(content, ext) {
-            const blob = new Blob([content], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = currentFile.name.replace(`.${ext}`, `_formatted.${ext}`);
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
+            function downloadFile(content, ext) {
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = currentFile.name.replace(`.${ext}`, `_formatted.${ext}`);
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        })();
     </script>
 </body>
 </html>
