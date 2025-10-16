@@ -2,7 +2,7 @@
 
 A free, open-source web toolkit with two powerful tools for formatting academic documents.
 
-🔗 **[Try it now!](https://your-username.github.io/latex-bibtex-tools/)**
+🔗 **[Try it now!](https://cnrs-oguzumut.github.io/bibtex-formatter/)**
 
 ![LaTeX & BibTeX Tools Screenshot](screenshot.png)
 
@@ -116,7 +116,7 @@ The formatter includes abbreviations for 20+ common journals:
 ## 🚀 Installation & Usage
 
 ### Option 1: Use Online (Recommended)
-Visit: https://your-username.github.io/latex-bibtex-tools/
+Visit: https://cnrs-oguzumut.github.io/bibtex-formatter/
 
 ### Option 2: Download and Run Locally
 1. Download `index.html` from this repository
@@ -228,17 +228,16 @@ Created to solve common formatting problems faced by researchers when preparing 
 
 ## 📧 Support
 
-- 🐛 **Found a bug?** [Open an issue](https://github.com/your-username/latex-bibtex-tools/issues)
-- 💡 **Have a feature request?** [Start a discussion](https://github.com/your-username/latex-bibtex-tools/discussions)
-- 📖 **Need help?** Check the [Wiki](https://github.com/your-username/latex-bibtex-tools/wiki)
+- 🐛 **Found a bug?** [Open an issue](https://cnrs-oguzumut.github.io/bibtex-formatter/issues)
+- 💡 **Have a feature request?** [Start a discussion](https://cnrs-oguzumut.github.io/bibtex-formatter/discussions)
 
 ---
 
 ## 📊 Statistics
 
-![Downloads](https://img.shields.io/github/downloads/your-username/latex-bibtex-tools/total)
-![Stars](https://img.shields.io/github/stars/your-username/latex-bibtex-tools)
-![Issues](https://img.shields.io/github/issues/your-username/latex-bibtex-tools)
+![Downloads](https://img.shields.io/github/downloads/cnrs-oguzumut/bibtex-formattertotal)
+![Stars](https://img.shields.io/github/stars/cnrs-oguzumut/bibtex-formatter)
+![Issues](https://img.shields.io/github/issues/cnrs-oguzumut/bibtex-formatter)
 
 ---
 
