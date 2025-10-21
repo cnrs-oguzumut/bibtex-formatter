@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LaTeX & BibTeX Tools - Fixed</title>
+    <title>LaTeX & BibTeX Tools</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -178,6 +179,64 @@
             font-weight: bold;
         }
 
+        .figures-drop-section {
+            margin-top: 30px;
+            padding: 25px;
+            background: #fff9e6;
+            border-radius: 8px;
+            border: 2px solid #ffd700;
+            display: none;
+        }
+
+        .figures-drop-section.visible {
+            display: block;
+        }
+
+        .figures-drop-zone {
+            border: 3px dashed #ffa500;
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .figures-drop-zone:hover, .figures-drop-zone.drag-over {
+            border-color: #ff8c00;
+            background: #fffaf0;
+            transform: scale(1.02);
+        }
+
+        .file-list {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .file-item .status {
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+
+        .file-item.matched {
+            border-left: 3px solid #27ae60;
+        }
+
+        .file-item.unmatched {
+            border-left: 3px solid #e74c3c;
+        }
+
         .buttons {
             display: flex;
             gap: 15px;
@@ -219,6 +278,17 @@
         .btn-secondary:hover {
             background: #2c3e50;
             transform: translateY(-2px);
+        }
+
+        .btn-zip {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+            font-size: 1.1em;
+        }
+
+        .btn-zip:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(243, 156, 18, 0.4);
         }
 
         button:disabled {
@@ -373,8 +443,8 @@
 <body>
     <div class="main-container">
         <header>
-            <h1>🔧 LaTeX & BibTeX Tools - Fixed</h1>
-            <p class="subtitle">Professional formatting tools for academic documents with improved name handling</p>
+            <h1>🔧 LaTeX & BibTeX Tools</h1>
+            <p class="subtitle">Professional formatting tools for academic documents</p>
         </header>
 
         <div class="tabs">
@@ -414,14 +484,35 @@
                     <div class="mapping-list" id="mappingList"></div>
                 </div>
 
+                <!-- NEW: Drag & Drop Section for Figures -->
+                <div class="figures-drop-section" id="figuresDropSection">
+                    <h3 style="color: #f39c12; margin-bottom: 15px;">📦 Drop Your Figure Files Here</h3>
+                    <p style="color: #666; margin-bottom: 15px;">Drag your figure files below to automatically rename and download them as a ZIP</p>
+                    
+                    <div class="figures-drop-zone" id="figuresFilesDropZone">
+                        <div class="drop-zone-icon">🖼️</div>
+                        <div class="drop-zone-text">Drop image files here</div>
+                        <div style="color: #999; font-size: 0.9em; margin-top: 10px;">Supports: PNG, JPG, PDF, EPS, etc.</div>
+                    </div>
+
+                    <input type="file" id="figuresFilesInput" multiple accept="image/*,.pdf,.eps">
+
+                    <div class="file-list" id="droppedFilesList"></div>
+
+                    <button class="btn-zip" id="downloadZipButton" disabled>
+                        <span>📦</span>
+                        <span>Download Renamed Figures (ZIP)</span>
+                    </button>
+                </div>
+
                 <div class="buttons">
                     <button class="btn-primary" id="downloadTex">
                         <span>⬇️</span>
                         <span>Download Updated .tex</span>
                     </button>
                     <button class="btn-secondary" id="downloadBash">
-                        <span>🔧</span>
-                        <span>Download Organization Script</span>
+                        <span>🐧</span>
+                        <span>Bash Script (Mac/Linux)</span>
                     </button>
                 </div>
             </div>
@@ -494,13 +585,11 @@
             
             return name.trim().split(/\s+/).map(part => {
                 if (part.includes('-')) {
-                    // Handle hyphenated names like "Jean-Pierre"
                     return part.split('-').map(p => {
                         if (p.length === 0) return '';
                         return p.charAt(0).toUpperCase() + '.';
                     }).join('-');
                 } else {
-                    // Regular name part
                     if (part.length === 0) return '';
                     return part.charAt(0).toUpperCase() + '.';
                 }
@@ -510,34 +599,28 @@
         function formatAuthorName(author) {
             if (!author || author.trim() === '') return '';
             
-            // Clean up the author string - but be more careful with braces
             author = author.trim()
-                .replace(/~/g, ' ')           // Replace non-breaking spaces
-                .replace(/\s+/g, ' ');        // Normalize whitespace
+                .replace(/~/g, ' ')
+                .replace(/\s+/g, ' ');
             
-            // Only remove outer braces if they wrap the ENTIRE name
             if (author.startsWith('{') && author.endsWith('}')) {
                 author = author.slice(1, -1);
             }
             
-            // Check if name is already abbreviated (has 2+ periods indicating initials)
             const periodCount = (author.match(/\./g) || []).length;
             if (periodCount >= 2) {
-                // Already abbreviated - just clean up extra spaces and periods
                 return author
-                    .replace(/\.\s*\.\s*/g, '. ')  // Fix double periods
-                    .replace(/\s+/g, ' ')           // Normalize spaces
+                    .replace(/\.\s*\.\s*/g, '. ')
+                    .replace(/\s+/g, ' ')
                     .trim();
             }
             
-            // Handle "Last, First Middle" format
             if (author.includes(',')) {
                 const parts = author.split(',').map(p => p.trim());
                 if (parts.length >= 2) {
                     const firstPart = parts[0];
                     const secondPart = parts[1];
                     
-                    // Check if this looks like "Last, First" format
                     const journalIndicators = /[\[\]\(\)]|arXiv|doi|vol|pp|pages|et al\.|manuscript|preprint|submitted/i;
                     const seemsLikeFirstName = secondPart.length < 50 && !journalIndicators.test(secondPart);
                     
@@ -554,7 +637,6 @@
                 }
             }
             
-            // Handle "First Middle Last" format
             const parts = author.split(/\s+/).filter(Boolean);
             if (parts.length === 0) return '';
             if (parts.length === 1) return parts[0];
@@ -568,10 +650,7 @@
         function formatAuthors(authorString) {
             if (!authorString || authorString.trim() === '') return '';
             
-            // Remove outer braces and clean up
             const cleanAuthorString = authorString.replace(/^\{|\}$/g, '').trim();
-            
-            // Split by 'and' with more flexible regex
             const authors = cleanAuthorString.split(/\s*\band\b\s*/i);
             
             return authors
@@ -611,11 +690,17 @@
             let updatedTexContent = '';
             let mappings = [];
             let originalFileName = '';
+            let droppedFiles = [];
 
             const dropZone = document.getElementById('figuresDropZone');
             const fileInput = document.getElementById('figuresFileInput');
             const fileInfo = document.getElementById('figuresFileInfo');
             const results = document.getElementById('figuresResults');
+            const figuresDropSection = document.getElementById('figuresDropSection');
+            const figuresFilesDropZone = document.getElementById('figuresFilesDropZone');
+            const figuresFilesInput = document.getElementById('figuresFilesInput');
+            const droppedFilesList = document.getElementById('droppedFilesList');
+            const downloadZipButton = document.getElementById('downloadZipButton');
 
             dropZone.addEventListener('click', () => fileInput.click());
 
@@ -646,6 +731,32 @@
             fileInput.addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (file) handleFile(file);
+            });
+
+            // Figure files drop zone
+            figuresFilesDropZone.addEventListener('click', () => figuresFilesInput.click());
+
+            figuresFilesDropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                figuresFilesDropZone.classList.add('drag-over');
+            });
+
+            figuresFilesDropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                figuresFilesDropZone.classList.remove('drag-over');
+            });
+
+            figuresFilesDropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                figuresFilesDropZone.classList.remove('drag-over');
+                handleFigureFiles(e.dataTransfer.files);
+            });
+
+            figuresFilesInput.addEventListener('change', (e) => {
+                handleFigureFiles(e.target.files);
             });
 
             function handleFile(file) {
@@ -745,7 +856,96 @@
                 }
 
                 results.classList.add('visible');
+                figuresDropSection.classList.add('visible');
             }
+
+            function handleFigureFiles(files) {
+                droppedFiles = Array.from(files);
+                displayDroppedFiles();
+                downloadZipButton.disabled = droppedFiles.length === 0;
+            }
+
+            function displayDroppedFiles() {
+                droppedFilesList.innerHTML = '';
+                
+                droppedFiles.forEach(file => {
+                    const fileName = file.name;
+                    const baseName = fileName.substring(fileName.lastIndexOf('/') + 1);
+                    
+                    // Try to match with mappings
+                    const mapping = mappings.find(m => {
+                        const oldBaseName = m.old.substring(m.old.lastIndexOf('/') + 1);
+                        return oldBaseName === baseName || m.old === fileName;
+                    });
+                    
+                    const item = document.createElement('div');
+                    item.className = `file-item ${mapping ? 'matched' : 'unmatched'}`;
+                    
+                    if (mapping) {
+                        item.innerHTML = `
+                            <span class="status">✅</span>
+                            <span>${fileName} → ${mapping.new}</span>
+                        `;
+                    } else {
+                        item.innerHTML = `
+                            <span class="status">⚠️</span>
+                            <span>${fileName} (not found in .tex file)</span>
+                        `;
+                    }
+                    
+                    droppedFilesList.appendChild(item);
+                });
+            }
+
+            downloadZipButton.addEventListener('click', async () => {
+                const zip = new JSZip();
+                const folder = zip.folder('Figures_ordered');
+                
+                let matchedCount = 0;
+                
+                for (const file of droppedFiles) {
+                    const fileName = file.name;
+                    const baseName = fileName.substring(fileName.lastIndexOf('/') + 1);
+                    
+                    const mapping = mappings.find(m => {
+                        const oldBaseName = m.old.substring(m.old.lastIndexOf('/') + 1);
+                        return oldBaseName === baseName || m.old === fileName;
+                    });
+                    
+                    if (mapping) {
+                        folder.file(mapping.new, file);
+                        matchedCount++;
+                    }
+                }
+                
+                if (matchedCount === 0) {
+                    alert('No files matched the mappings from your .tex file!');
+                    return;
+                }
+                
+                downloadZipButton.disabled = true;
+                downloadZipButton.innerHTML = '<span>⏳</span><span>Creating ZIP...</span>';
+                
+                try {
+                    const content = await zip.generateAsync({type: 'blob'});
+                    const url = URL.createObjectURL(content);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'Figures_ordered.zip';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    
+                    downloadZipButton.innerHTML = '<span>✅</span><span>Downloaded!</span>';
+                    setTimeout(() => {
+                        downloadZipButton.innerHTML = '<span>📦</span><span>Download Renamed Figures (ZIP)</span>';
+                        downloadZipButton.disabled = false;
+                    }, 2000);
+                } catch (error) {
+                    alert('Error creating ZIP file: ' + error.message);
+                    downloadZipButton.innerHTML = '<span>📦</span><span>Download Renamed Figures (ZIP)</span>';
+                    downloadZipButton.disabled = false;
+                }
+            });
 
             document.getElementById('downloadTex').addEventListener('click', () => {
                 const blob = new Blob([updatedTexContent], { type: 'text/plain' });
@@ -761,16 +961,12 @@
                 let bashScript = '#!/bin/bash\n\n';
                 bashScript += '# LaTeX Figure Organization Script\n';
                 bashScript += '# This script COPIES files to Figures_ordered folder\n\n';
-                bashScript += 'OUTPUT_DIR="Figures_ordered"\n';
-                bashScript += 'DRY_RUN=false\n\n';
-                bashScript += 'set -e\n\n';
-                bashScript += 'if [ "$DRY_RUN" = false ]; then\n';
-                bashScript += '    mkdir -p "$OUTPUT_DIR"\n';
-                bashScript += '    echo "📁 Created directory: $OUTPUT_DIR"\n';
-                bashScript += 'fi\n\n';
+                bashScript += 'OUTPUT_DIR="Figures_ordered"\n\n';
+                bashScript += 'mkdir -p "$OUTPUT_DIR"\n';
+                bashScript += 'echo "📁 Created directory: $OUTPUT_DIR"\n\n';
                 bashScript += 'SUCCESS_COUNT=0\nSKIP_COUNT=0\nERROR_COUNT=0\n\n';
 
-                mappings.forEach((mapping, index) => {
+                mappings.forEach((mapping) => {
                     const destFile = `$OUTPUT_DIR/${mapping.new}`;
                     bashScript += `if [ -f "${mapping.old}" ]; then\n`;
                     bashScript += `    if [ -f "${destFile}" ]; then\n`;
@@ -885,11 +1081,8 @@
                 const stats = { authorsProcessed: 0, journalsProcessed: 0, duplicatesRemoved: 0 };
                 let result = currentContent;
 
-                // Process authors using the improved function that handles nested braces
                 if (options.abbreviateAuthors) {
                     const replacements = [];
-                    
-                    // Find author fields
                     const authorRegex = /author\s*=\s*\{/gi;
                     let match;
                     
@@ -897,7 +1090,6 @@
                         const startPos = match.index;
                         const contentStart = startPos + match[0].length;
                         
-                        // Find the closing brace by counting ALL braces
                         let depth = 1;
                         let pos = contentStart;
                         
@@ -909,7 +1101,6 @@
                             } else if (char === '}') {
                                 depth--;
                                 if (depth === 0) {
-                                    // Found the matching closing brace
                                     break;
                                 }
                             }
@@ -917,11 +1108,9 @@
                             pos++;
                         }
                         
-                        // Extract the author content (everything between the opening and closing brace)
                         const authorContent = result.substring(contentStart, pos);
                         const formatted = formatAuthors(authorContent);
                         
-                        // Replace from start of "author" to character after closing }
                         replacements.push({
                             start: startPos,
                             end: pos + 1,
@@ -929,7 +1118,6 @@
                         });
                     }
                     
-                    // Apply replacements in reverse order
                     replacements.sort((a, b) => b.start - a.start);
                     replacements.forEach(rep => {
                         result = result.substring(0, rep.start) + rep.text + result.substring(rep.end);
@@ -940,8 +1128,6 @@
 
                 if (options.abbreviateJournals) {
                     const replacements = [];
-                    
-                    // Find journal fields with proper brace counting
                     const journalRegex = /journal\s*=\s*\{/gi;
                     let match;
                     
@@ -949,7 +1135,6 @@
                         const startPos = match.index;
                         const contentStart = startPos + match[0].length;
                         
-                        // Find the closing brace by counting ALL braces
                         let depth = 1;
                         let pos = contentStart;
                         
@@ -982,7 +1167,6 @@
                         });
                     }
                     
-                    // Apply replacements in reverse order
                     replacements.sort((a, b) => b.start - a.start);
                     replacements.forEach(rep => {
                         result = result.substring(0, rep.start) + rep.text + result.substring(rep.end);
