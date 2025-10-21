@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LaTeX & BibTeX Tools</title>
+    <title>LaTeX & BibTeX Tools - Fixed</title>
     <style>
         * {
             box-sizing: border-box;
@@ -327,6 +327,30 @@
             background: #f8f9fa;
         }
 
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 8px;
+            border: 1px solid #ffeaa7;
+        }
+
+        .test-result {
+            margin: 5px 0;
+            padding: 5px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .test-input {
+            color: #e74c3c;
+        }
+
+        .test-output {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
         @media (max-width: 768px) {
             .main-container {
                 margin: 10px;
@@ -349,13 +373,14 @@
 <body>
     <div class="main-container">
         <header>
-            <h1>🔧 LaTeX & BibTeX Tools</h1>
-            <p class="subtitle">Professional formatting tools for academic documents</p>
+            <h1>🔧 LaTeX & BibTeX Tools - Fixed</h1>
+            <p class="subtitle">Professional formatting tools for academic documents with improved name handling</p>
         </header>
 
         <div class="tabs">
             <div class="tab active" data-tab="figures">📊 Figure Organizer</div>
             <div class="tab" data-tab="bibtex">📚 BibTeX Formatter</div>
+            <div class="tab" data-tab="test">🧪 Test Cases</div>
         </div>
 
         <!-- FIGURE ORGANIZER TAB -->
@@ -436,6 +461,16 @@
             <div class="preview" id="bibtexPreview"></div>
         </div>
 
+        <!-- TEST CASES TAB -->
+        <div id="test-tab" class="tab-content">
+            <div class="test-section">
+                <h3>🧪 Author Name Processing Test Cases</h3>
+                <p>Testing the improved name formatting functions:</p>
+                <div id="testResults"></div>
+                <button class="btn-primary" onclick="runTests()">Run Tests</button>
+            </div>
+        </div>
+
         <footer>
             🔒 All processing happens locally in your browser - no data is uploaded
         </footer>
@@ -452,6 +487,123 @@
                 document.getElementById(`${tabName}-tab`).classList.add('active');
             });
         });
+
+        // ===== IMPROVED BIBTEX FUNCTIONS =====
+        function getInitials(name) {
+            if (!name || name.trim() === '') return '';
+            
+            return name.trim().split(/\s+/).map(part => {
+                if (part.includes('-')) {
+                    // Handle hyphenated names like "Jean-Pierre"
+                    return part.split('-').map(p => {
+                        if (p.length === 0) return '';
+                        return p.charAt(0).toUpperCase() + '.';
+                    }).join('-');
+                } else {
+                    // Regular name part
+                    if (part.length === 0) return '';
+                    return part.charAt(0).toUpperCase() + '.';
+                }
+            }).filter(Boolean).join(' ');
+        }
+
+        function formatAuthorName(author) {
+            if (!author || author.trim() === '') return '';
+            
+            // Clean up the author string - but be more careful with braces
+            author = author.trim()
+                .replace(/~/g, ' ')           // Replace non-breaking spaces
+                .replace(/\s+/g, ' ');        // Normalize whitespace
+            
+            // Only remove outer braces if they wrap the ENTIRE name
+            if (author.startsWith('{') && author.endsWith('}')) {
+                author = author.slice(1, -1);
+            }
+            
+            // Check if name is already abbreviated (has 2+ periods indicating initials)
+            const periodCount = (author.match(/\./g) || []).length;
+            if (periodCount >= 2) {
+                // Already abbreviated - just clean up extra spaces and periods
+                return author
+                    .replace(/\.\s*\.\s*/g, '. ')  // Fix double periods
+                    .replace(/\s+/g, ' ')           // Normalize spaces
+                    .trim();
+            }
+            
+            // Handle "Last, First Middle" format
+            if (author.includes(',')) {
+                const parts = author.split(',').map(p => p.trim());
+                if (parts.length >= 2) {
+                    const firstPart = parts[0];
+                    const secondPart = parts[1];
+                    
+                    // Check if this looks like "Last, First" format
+                    const journalIndicators = /[\[\]\(\)]|arXiv|doi|vol|pp|pages|et al\.|manuscript|preprint|submitted/i;
+                    const seemsLikeFirstName = secondPart.length < 50 && !journalIndicators.test(secondPart);
+                    
+                    if (seemsLikeFirstName) {
+                        const lastName = firstPart;
+                        const firstNames = parts.slice(1).join(' ').trim();
+                        if (firstNames) {
+                            return `${getInitials(firstNames)} ${lastName}`;
+                        }
+                        return lastName;
+                    } else {
+                        author = firstPart;
+                    }
+                }
+            }
+            
+            // Handle "First Middle Last" format
+            const parts = author.split(/\s+/).filter(Boolean);
+            if (parts.length === 0) return '';
+            if (parts.length === 1) return parts[0];
+            
+            const lastName = parts[parts.length - 1];
+            const firstNames = parts.slice(0, -1).join(' ');
+            
+            return `${getInitials(firstNames)} ${lastName}`;
+        }
+
+        function formatAuthors(authorString) {
+            if (!authorString || authorString.trim() === '') return '';
+            
+            // Remove outer braces and clean up
+            const cleanAuthorString = authorString.replace(/^\{|\}$/g, '').trim();
+            
+            // Split by 'and' with more flexible regex
+            const authors = cleanAuthorString.split(/\s*\band\b\s*/i);
+            
+            return authors
+                .map(author => formatAuthorName(author.trim()))
+                .filter(Boolean)
+                .join(' and ');
+        }
+
+        // ===== TEST FUNCTION =====
+        function runTests() {
+            const testCases = [
+                'John Smith and Jane Doe',
+                'García, José and Müller, Hans',
+                'Jean-Pierre Dupont and Marie-Claire Dubois',
+                'M. Talamali and V. Pet{\\"a}j{\\"a} and D. Vandembroucq and S. Roux'
+            ];
+            
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.innerHTML = '';
+            
+            testCases.forEach(testCase => {
+                const result = formatAuthors(testCase);
+                const div = document.createElement('div');
+                div.className = 'test-result';
+                div.innerHTML = `
+                    <div class="test-input">Input:  ${testCase}</div>
+                    <div class="test-output">Output: ${result}</div>
+                    <hr style="margin: 10px 0;">
+                `;
+                resultsDiv.appendChild(div);
+            });
+        }
 
         // ===== FIGURE ORGANIZER SCRIPT =====
         (function() {
@@ -633,7 +785,7 @@
                     bashScript += `fi\n\n`;
                 });
 
-                bashScript += 'echo "✅ Copied: $SUCCESS_COUNT | ⏭️ Skipped: $SKIP_COUNT | ❌ Errors: $ERROR_COUNT"\n';
+                bashScript += 'echo "✅ Copied: $SUCCESS_COUNT | ⭕️ Skipped: $SKIP_COUNT | ❌ Errors: $ERROR_COUNT"\n';
 
                 const blob = new Blob([bashScript], { type: 'text/plain' });
                 const url = URL.createObjectURL(blob);
@@ -712,32 +864,6 @@
                 reader.readAsText(file);
             }
 
-            function getInitials(name) {
-                return name.trim().split(/\s+/).map(part => 
-                    part.includes('-') ? part.split('-').map(p => p[0].toUpperCase() + '.').join('-') : part[0].toUpperCase() + '.'
-                ).join(' ');
-            }
-
-            function formatAuthorName(author) {
-                author = author.trim().replace(/~/g, ' ').split(/\s+/).join(' ');
-                if (author.includes(',')) {
-                    const parts = author.split(',').map(p => p.trim());
-                    if (parts.length === 2) return `${getInitials(parts[1])} ${parts[0]}`;
-                }
-                const parts = author.split(/\s+/);
-                if (parts.length === 0) return "";
-                const lastName = parts[parts.length - 1];
-                if (parts.length > 1) {
-                    return `${getInitials(parts.slice(0, -1).join(' '))} ${lastName}`;
-                }
-                return lastName;
-            }
-
-            function formatAuthors(authorString) {
-                return authorString.replace(/[{}]/g, '').split(/\s+and\s+/)
-                    .map(a => formatAuthorName(a.trim())).filter(Boolean).join(' and ');
-            }
-
             function abbreviateJournal(journalName) {
                 const clean = journalName.replace(/[{}]/g, '').trim().toLowerCase();
                 for (const [full, abbrev] of Object.entries(JOURNAL_ABBREV)) {
@@ -759,19 +885,107 @@
                 const stats = { authorsProcessed: 0, journalsProcessed: 0, duplicatesRemoved: 0 };
                 let result = currentContent;
 
-                // Simple processing for demo
+                // Process authors using the improved function that handles nested braces
                 if (options.abbreviateAuthors) {
-                    result = result.replace(/author\s*=\s*\{([^}]+)\}/gi, (match, authors) => {
-                        stats.authorsProcessed++;
-                        return `author = {${formatAuthors(authors)}}`;
+                    const replacements = [];
+                    
+                    // Find author fields
+                    const authorRegex = /author\s*=\s*\{/gi;
+                    let match;
+                    
+                    while ((match = authorRegex.exec(result)) !== null) {
+                        const startPos = match.index;
+                        const contentStart = startPos + match[0].length;
+                        
+                        // Find the closing brace by counting ALL braces
+                        let depth = 1;
+                        let pos = contentStart;
+                        
+                        while (pos < result.length && depth > 0) {
+                            const char = result[pos];
+                            
+                            if (char === '{') {
+                                depth++;
+                            } else if (char === '}') {
+                                depth--;
+                                if (depth === 0) {
+                                    // Found the matching closing brace
+                                    break;
+                                }
+                            }
+                            
+                            pos++;
+                        }
+                        
+                        // Extract the author content (everything between the opening and closing brace)
+                        const authorContent = result.substring(contentStart, pos);
+                        const formatted = formatAuthors(authorContent);
+                        
+                        // Replace from start of "author" to character after closing }
+                        replacements.push({
+                            start: startPos,
+                            end: pos + 1,
+                            text: `author = {${formatted}}`
+                        });
+                    }
+                    
+                    // Apply replacements in reverse order
+                    replacements.sort((a, b) => b.start - a.start);
+                    replacements.forEach(rep => {
+                        result = result.substring(0, rep.start) + rep.text + result.substring(rep.end);
                     });
+                    
+                    stats.authorsProcessed = replacements.length;
                 }
 
                 if (options.abbreviateJournals) {
-                    result = result.replace(/journal\s*=\s*\{([^}]+)\}/gi, (match, journal) => {
-                        const abbrev = abbreviateJournal(journal);
-                        if (abbrev !== journal.replace(/[{}]/g, '').trim()) stats.journalsProcessed++;
-                        return `journal = {${abbrev}}`;
+                    const replacements = [];
+                    
+                    // Find journal fields with proper brace counting
+                    const journalRegex = /journal\s*=\s*\{/gi;
+                    let match;
+                    
+                    while ((match = journalRegex.exec(result)) !== null) {
+                        const startPos = match.index;
+                        const contentStart = startPos + match[0].length;
+                        
+                        // Find the closing brace by counting ALL braces
+                        let depth = 1;
+                        let pos = contentStart;
+                        
+                        while (pos < result.length && depth > 0) {
+                            const char = result[pos];
+                            
+                            if (char === '{') {
+                                depth++;
+                            } else if (char === '}') {
+                                depth--;
+                                if (depth === 0) {
+                                    break;
+                                }
+                            }
+                            
+                            pos++;
+                        }
+                        
+                        const journalContent = result.substring(contentStart, pos);
+                        const abbrev = abbreviateJournal(journalContent);
+                        
+                        if (abbrev !== journalContent.replace(/[{}]/g, '').trim()) {
+                            stats.journalsProcessed++;
+                        }
+                        
+                        replacements.push({
+                            start: startPos,
+                            end: pos + 1,
+                            text: `journal = {${abbrev}}`
+                        });
+                    }
+                    
+                    // Apply replacements in reverse order
+                    replacements.sort((a, b) => b.start - a.start);
+                    replacements.forEach(rep => {
+                        result = result.substring(0, rep.start) + rep.text + result.substring(rep.end);
                     });
                 }
                 
@@ -815,6 +1029,11 @@
                 URL.revokeObjectURL(url);
             }
         })();
+
+        // Run tests on page load
+        window.addEventListener('load', () => {
+            setTimeout(runTests, 100);
+        });
     </script>
 </body>
 </html>
