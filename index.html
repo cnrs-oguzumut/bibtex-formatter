@@ -453,7 +453,6 @@
             <div class="tab" data-tab="test">🧪 Test Cases</div>
         </div>
 
-        <!-- FIGURE ORGANIZER TAB -->
         <div id="figures-tab" class="tab-content active">
             <div class="drop-zone" id="figuresDropZone">
                 <div class="drop-zone-icon">📄</div>
@@ -484,18 +483,17 @@
                     <div class="mapping-list" id="mappingList"></div>
                 </div>
 
-                <!-- NEW: Drag & Drop Section for Figures -->
                 <div class="figures-drop-section" id="figuresDropSection">
                     <h3 style="color: #f39c12; margin-bottom: 15px;">📦 Drop Your Figure Files Here</h3>
-                    <p style="color: #666; margin-bottom: 15px;">Drag your figure files below to automatically rename and download them as a ZIP</p>
+                    <p style="color: #666; margin-bottom: 15px;">Drag your figure files **or folders** below to automatically rename and download them as a ZIP</p>
                     
                     <div class="figures-drop-zone" id="figuresFilesDropZone">
                         <div class="drop-zone-icon">🖼️</div>
-                        <div class="drop-zone-text">Drop image files here</div>
+                        <div class="drop-zone-text">Drop image files or folders here</div>
                         <div style="color: #999; font-size: 0.9em; margin-top: 10px;">Supports: PNG, JPG, PDF, EPS, etc.</div>
                     </div>
 
-                    <input type="file" id="figuresFilesInput" multiple accept="image/*,.pdf,.eps">
+                    <input type="file" id="figuresFilesInput" multiple accept="image/*,.pdf,.eps" webkitdirectory>
 
                     <div class="file-list" id="droppedFilesList"></div>
 
@@ -518,7 +516,6 @@
             </div>
         </div>
 
-        <!-- BIBTEX FORMATTER TAB -->
         <div id="bibtex-tab" class="tab-content">
             <div class="drop-zone" id="bibtexDropZone">
                 <div class="drop-zone-icon">📚</div>
@@ -552,13 +549,12 @@
             <div class="preview" id="bibtexPreview"></div>
         </div>
 
-        <!-- TEST CASES TAB -->
         <div id="test-tab" class="tab-content">
             <div class="test-section">
                 <h3>🧪 Author Name Processing Test Cases</h3>
                 <p>Testing the improved name formatting functions:</p>
                 <div id="testResults"></div>
-                <button class="btn-primary" onclick="runTests()">Run Tests</button>
+                <button class="btn-primary" id="runTestsButton">Run Tests</button>
             </div>
         </div>
 
@@ -568,6 +564,8 @@
     </div>
 
     <script>
+    window.addEventListener('DOMContentLoaded', () => {
+
         // ===== TAB SWITCHING =====
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', () => {
@@ -683,6 +681,8 @@
                 resultsDiv.appendChild(div);
             });
         }
+        
+        document.getElementById('runTestsButton').addEventListener('click', runTests);
 
         // ===== FIGURE ORGANIZER SCRIPT =====
         (function() {
@@ -702,6 +702,56 @@
             const droppedFilesList = document.getElementById('droppedFilesList');
             const downloadZipButton = document.getElementById('downloadZipButton');
 
+            // Safety check: if elements don't exist, log an error and stop
+            if (!dropZone || !figuresFilesDropZone) {
+                console.error("Fatal Error: Drop zones not found. Script cannot run.");
+                return;
+            }
+
+            // *** NEW: Recursive function to traverse folders ***
+            async function traverseEntry(entry, path, allFiles) {
+                if (entry.isFile) {
+                    try {
+                        const file = await new Promise((resolve, reject) => entry.file(resolve, reject));
+                        // We manually add the relative path, so it matches the input's webkitRelativePath
+                        file.webkitRelativePath = path + file.name;
+                        allFiles.push(file);
+                    } catch (err) {
+                        console.error("Error reading file:", entry.name, err);
+                    }
+                } else if (entry.isDirectory) {
+                    const reader = entry.createReader();
+                    try {
+                        const entries = await new Promise((resolve, reject) => reader.readEntries(resolve, reject));
+                        const promises = [];
+                        for (const childEntry of entries) {
+                            promises.push(traverseEntry(childEntry, path + entry.name + '/', allFiles));
+                        }
+                        await Promise.all(promises);
+                    } catch (err) {
+                         console.error("Error reading directory:", entry.name, err);
+                    }
+                }
+            }
+
+            // *** NEW: Helper to process dropped items (files or folders) ***
+            async function getFilesFromDrop(items) {
+                const allFiles = [];
+                const promises = [];
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    if (item.webkitGetAsEntry) {
+                        const entry = item.webkitGetAsEntry();
+                        if (entry) {
+                            promises.push(traverseEntry(entry, '', allFiles));
+                        }
+                    }
+                }
+                await Promise.all(promises);
+                return allFiles;
+            }
+
+            // --- .tex file drop zone ---
             dropZone.addEventListener('click', () => fileInput.click());
 
             dropZone.addEventListener('dragover', (e) => {
@@ -720,11 +770,17 @@
                 e.preventDefault();
                 e.stopPropagation();
                 dropZone.classList.remove('drag-over');
-                const file = e.dataTransfer.files[0];
-                if (file && file.name.endsWith('.tex')) {
-                    handleFile(file);
+                
+                // Check if files exist and there's at least one
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    const file = e.dataTransfer.files[0];
+                    if (file && file.name.endsWith('.tex')) {
+                        handleFile(file);
+                    } else {
+                        alert('Please drop a .tex file');
+                    }
                 } else {
-                    alert('Please drop a .tex file');
+                     alert('Please drop a .tex file');
                 }
             });
 
@@ -733,7 +789,7 @@
                 if (file) handleFile(file);
             });
 
-            // Figure files drop zone
+            // --- Figure files/folders drop zone ---
             figuresFilesDropZone.addEventListener('click', () => figuresFilesInput.click());
 
             figuresFilesDropZone.addEventListener('dragover', (e) => {
@@ -748,14 +804,27 @@
                 figuresFilesDropZone.classList.remove('drag-over');
             });
 
-            figuresFilesDropZone.addEventListener('drop', (e) => {
+            // *** MODIFIED: Updated drop handler for folders ***
+            figuresFilesDropZone.addEventListener('drop', async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 figuresFilesDropZone.classList.remove('drag-over');
-                handleFigureFiles(e.dataTransfer.files);
+                
+                let files = [];
+                if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+                    // Use new helper function to get files from folders
+                    files = await getFilesFromDrop(e.dataTransfer.items);
+                } else if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    // Fallback for older browsers (no folder support)
+                    files = Array.from(e.dataTransfer.files);
+                }
+                handleFigureFiles(files);
             });
 
+            // *** MODIFIED: Input change handler now handles folder input ***
             figuresFilesInput.addEventListener('change', (e) => {
+                // Files from <input type="file" webkitdirectory>
+                // already have webkitRelativePath
                 handleFigureFiles(e.target.files);
             });
 
@@ -820,9 +889,14 @@
 
                 updatedTexContent = originalTexContent;
                 mappings.forEach(mapping => {
-                    const escapedOld = mapping.old.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    const regex = new RegExp(escapedOld, 'g');
-                    updatedTexContent = updatedTexContent.replace(regex, mapping.newPath);
+                    // Normalize slashes in mapping.old for regex
+                    const normalizedOldPath = mapping.old.replace(/\\/g, '/');
+                    const escapedOld = normalizedOldPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    
+                    // Create a regex that finds the path, insensitive to slash type
+                    // This matches {path/to/file} or {path\to\file}
+                    const regex = new RegExp(`\\{${escapedOld.replace(/\\\//g, '[\\\\/]')}\\}`, 'g');
+                    updatedTexContent = updatedTexContent.replace(regex, `{${mapping.newPath}}`);
                 });
 
                 displayResults();
@@ -860,7 +934,9 @@
             }
 
             function handleFigureFiles(files) {
-                droppedFiles = Array.from(files);
+                // The 'files' here is a FileList or an Array of File objects
+                // The File objects should have .webkitRelativePath
+                droppedFiles = Array.from(files); 
                 displayDroppedFiles();
                 downloadZipButton.disabled = droppedFiles.length === 0;
             }
@@ -869,27 +945,33 @@
                 droppedFilesList.innerHTML = '';
                 
                 droppedFiles.forEach(file => {
-                    const fileName = file.name;
-                    const baseName = fileName.substring(fileName.lastIndexOf('/') + 1);
+                    // *** MODIFIED: Use webkitRelativePath for matching ***
+                    // Ensure file.webkitRelativePath exists; fallback to name
+                    let fileRelativePath = (file.webkitRelativePath || file.name);
+                    fileRelativePath = fileRelativePath.replace(/\\/g, '/'); // Normalize slashes
+                    
+                    const item = document.createElement('div');
                     
                     // Try to match with mappings
                     const mapping = mappings.find(m => {
-                        const oldBaseName = m.old.substring(m.old.lastIndexOf('/') + 1);
-                        return oldBaseName === baseName || m.old === fileName;
+                        // Normalize mapping.old as well for comparison
+                        const normalizedOldPath = m.old.replace(/\\/g, '/');
+                        // Check if the file's full relative path ENDS WITH the path from the .tex file
+                        // This handles "figures/img.png" matching "my_project/figures/img.png"
+                        return fileRelativePath.endsWith(normalizedOldPath);
                     });
                     
-                    const item = document.createElement('div');
                     item.className = `file-item ${mapping ? 'matched' : 'unmatched'}`;
                     
                     if (mapping) {
                         item.innerHTML = `
                             <span class="status">✅</span>
-                            <span>${fileName} → ${mapping.new}</span>
+                            <span>${fileRelativePath} → ${mapping.new}</span>
                         `;
                     } else {
                         item.innerHTML = `
                             <span class="status">⚠️</span>
-                            <span>${fileName} (not found in .tex file)</span>
+                            <span>${fileRelativePath} (not found in .tex)</span>
                         `;
                     }
                     
@@ -904,22 +986,24 @@
                 let matchedCount = 0;
                 
                 for (const file of droppedFiles) {
-                    const fileName = file.name;
-                    const baseName = fileName.substring(fileName.lastIndexOf('/') + 1);
+                    // *** MODIFIED: Use webkitRelativePath for matching ***
+                    let fileRelativePath = (file.webkitRelativePath || file.name);
+                    fileRelativePath = fileRelativePath.replace(/\\/g, '/');
                     
                     const mapping = mappings.find(m => {
-                        const oldBaseName = m.old.substring(m.old.lastIndexOf('/') + 1);
-                        return oldBaseName === baseName || m.old === fileName;
+                        const normalizedOldPath = m.old.replace(/\\/g, '/');
+                        return fileRelativePath.endsWith(normalizedOldPath);
                     });
                     
                     if (mapping) {
-                        folder.file(mapping.new, file);
+                        // We add the file to the zip with its NEW name
+                        folder.file(mapping.new, file); 
                         matchedCount++;
                     }
                 }
                 
                 if (matchedCount === 0) {
-                    alert('No files matched the mappings from your .tex file!');
+                    alert('No dropped files matched the mappings from your .tex file!');
                     return;
                 }
                 
@@ -968,19 +1052,26 @@
 
                 mappings.forEach((mapping) => {
                     const destFile = `$OUTPUT_DIR/${mapping.new}`;
-                    bashScript += `if [ -f "${mapping.old}" ]; then\n`;
+                    // Use a find command to locate the file, in case it's in a subdirectory
+                    // This is a robust way to handle the relative paths
+                    bashScript += `SRC_FILE=$(find . -path "*/${mapping.old}" -print -quit)\n`
+                    bashScript += `if [ -n "$SRC_FILE" ] && [ -f "$SRC_FILE" ]; then\n`;
                     bashScript += `    if [ -f "${destFile}" ]; then\n`;
+                    bashScript += `        echo "⭕️ Skipped (exists): ${destFile}"\n`;
                     bashScript += `        SKIP_COUNT=$((SKIP_COUNT + 1))\n`;
                     bashScript += `    else\n`;
-                    bashScript += `        cp "${mapping.old}" "${destFile}"\n`;
-                    bashScript += `        echo "✅ ${mapping.old} -> ${destFile}"\n`;
+                    bashScript += `        cp "$SRC_FILE" "${destFile}"\n`;
+                    bashScript += `        echo "✅ $SRC_FILE -> ${destFile}"\n`;
+            
                     bashScript += `        SUCCESS_COUNT=$((SUCCESS_COUNT + 1))\n`;
                     bashScript += `    fi\n`;
                     bashScript += `else\n`;
+                    bashScript += `    echo "❌ Not found: ${mapping.old}"\n`;
                     bashScript += `    ERROR_COUNT=$((ERROR_COUNT + 1))\n`;
                     bashScript += `fi\n\n`;
                 });
 
+                bashScript += 'echo "---"\n';
                 bashScript += 'echo "✅ Copied: $SUCCESS_COUNT | ⭕️ Skipped: $SKIP_COUNT | ❌ Errors: $ERROR_COUNT"\n';
 
                 const blob = new Blob([bashScript], { type: 'text/plain' });
@@ -1005,7 +1096,25 @@
                 'Philosophical Magazine': 'Philos. Mag.',
                 'Progress in Materials Science': 'Prog. Mater. Sci.',
                 'Computer methods in applied mechanics and engineering': 'Comput. Methods Appl. Mech. Eng.',
-                'Acta metallurgica': 'Acta Metall.'
+                'Acta metallurgica': 'Acta Metall.',
+                'Physical Review Materials': 'Phys. Rev. Mater.',
+                'Scripta Materialia': 'Scr. Mater.',
+                'Materials Science and Engineering: A': 'Mater. Sci. Eng. A',
+                'Materials Science and Engineering: R: Reports': 'Mater. Sci. Eng. R',
+                'Journal of Materials Science': 'J. Mater. Sci.',
+                'Metallurgical and Materials Transactions A': 'Metall. Mater. Trans. A',
+                'Physical Review Letters': 'Phys. Rev. Lett.',
+                'Nature Materials': 'Nat. Mater.',
+                'Science': 'Science',
+                'Nature': 'Nature',
+                'Physical Review B': 'Phys. Rev. B',
+                'Advances in physics': 'Adv. Phys.',
+                'Comptes rendus. Physique': 'C. R. Phys.',
+                'Journal of Physics D: Applied Physics': 'J. Phys. D Appl. Phys.',
+                'Nature Communications': 'Nat. Commun.',
+                'Modelling and Simulation in Materials Science and Engineering': 'Model. Simul. Mater. Sci. Eng.',
+                'Materials Theory': 'Mater. Theor.',
+                'Mechanics of Nano-objects': 'Mech. Nano-obj.',
             };
 
             let currentFile = null;
@@ -1018,19 +1127,28 @@
             const preview = document.getElementById('bibtexPreview');
             const statsDiv = document.getElementById('bibtexStats');
 
+            if (!dropZone) {
+                console.error("BibTeX Drop zone not found.");
+                return;
+            }
+
             dropZone.addEventListener('click', () => fileInput.click());
             
             dropZone.addEventListener('dragover', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 dropZone.classList.add('drag-over');
             });
             
-            dropZone.addEventListener('dragleave', () => {
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 dropZone.classList.remove('drag-over');
             });
             
             dropZone.addEventListener('drop', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 dropZone.classList.remove('drag-over');
                 const files = e.dataTransfer.files;
                 if (files.length > 0) handleFile(files[0]);
@@ -1215,9 +1333,9 @@
         })();
 
         // Run tests on page load
-        window.addEventListener('load', () => {
-            setTimeout(runTests, 100);
-        });
+        setTimeout(runTests, 100);
+        
+    }); // <-- End of DOMContentLoaded
     </script>
 </body>
 </html>
